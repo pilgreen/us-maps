@@ -19,9 +19,11 @@ The us.json target will generate a merged TopoJSON file for the United States wi
 
 Additionally, the target will create a *us* folder at root with individual TopoJSON files for each object.
 
+
+
 ### make states/%.json
 
-The states wildcard will generate a merged topojson file for a single state with the following objects:
+The states wildcard uses the state FIPS code to generate a merged topojson file for a single state with the following objects:
 
 + state: The state boundary
 + counties: The county boundaries
@@ -29,18 +31,22 @@ The states wildcard will generate a merged topojson file for a single state with
 + senate: State Legislature upper district boundaries
 + house: State Legislature lower district boundaries
 
-### make ks.json
+Example: `make states/20.json`
 
-The Kansas target will generate the states/20.json file, and append the following objects:
 
-+ zips: ZCTA5 boundaries for the state
 
-### make mo.json
+### make zipcodes/%.json
 
-The Missouri target will generate the states/29.json file, and append the following objects:
+The zipcode wildcard uses the state FIPS code to generate a topojson file for a single state with the following object:
 
 + zips: ZCTA5 boundaries for the state
 
-#### A note on individual state files and ZCTA5 boundaries
+Example: `make zipcodes/20.json`
 
-The zipcode file on the US Census site is 500 MB and is not available by state. Therefore, zip codes need to be manually pulled before being merged with the state file using individual targets. The scope of this project stopped with the two states required, so I have not created those targets. I would be happy to merge a pull request if anyone else uses this repository.
+**Note:** The ZCTA file is 500 MB and not available by state. Therefore, the minumum and maximum zip codes need to be listed manually and that list exceeded the scope of the project so far. I will add more states when it is required, and will accept pull requests if anyone else wants to contribute.
+
+
+
+#### Additional Notes:
+
+There are two other targets that generate the ks.json and mo.json files. These are there for convenience. I will add more as it is required or I get a pull request.
