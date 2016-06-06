@@ -1,0 +1,19 @@
+{
+  "name": "us-topojson",
+  "version": "1.0.0",
+  "description": "A Makefile for generating optimized US TopoJSON maps.",
+  "main": "Makefile",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pilgreen/us-topojson.git"
+  },
+  "author": "Jay Pilgreen",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pilgreen/us-topojson/issues"
+  },
+  "homepage": "https://github.com/pilgreen/us-topojson#readme"
+}
