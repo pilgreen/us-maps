@@ -1,6 +1,6 @@
 {
   "name": "us-maps",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Makefile for generating optimized US TopoJSON maps.",
   "main": "Makefile",
   "scripts": {

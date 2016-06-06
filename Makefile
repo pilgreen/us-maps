@@ -37,7 +37,7 @@ us.json: $(national) clean
 	topojson -o us/states.json --id-property GEOID -p name=NAME,usps=STUSPS -s 2e-6 -- states=$(states)
 	topojson -o us/counties.json --id-property GEOID -p name=NAME,sfp=STATEFP,cfp=COUNTYFP -s 2e-6 -- counties=$(counties)
 	topojson -o us/cd114.json --id-property GEOID -p name=NAMELSAD,sfp=STATEFP,cdfp=CD114FP -s 2e-6 -- districts=$(districts)
-	topojson -o us.json -- us/states.json us/counties.json us/cd114.json
+	topojson -o us.json -p -- us/states.json us/counties.json us/cd114.json
  
 states/%.json: $(national) shp/SLDL/tl_2015_%_sldl.shp shp/SLDU/tl_2015_%_sldu.shp clean
 	mkdir -p $(dir $@) tmp
@@ -49,7 +49,7 @@ states/%.json: $(national) shp/SLDL/tl_2015_%_sldl.shp shp/SLDU/tl_2015_%_sldu.s
 	topojson -o tmp/districts.json --id-property GEOID -p name=NAMELSAD,sfp=STATEFP,cdfp=CD114FP -s 2e-7 -- districts=tmp/cd114.shp
 	topojson -o tmp/senate.json --id-property GEOID -p name=NAMELSAD,sfp=STATEFP,did=SLDLST -s 2e-7 -- senate=shp/SLDU/tl_2015_$*_sldu.shp
 	topojson -o tmp/house.json --id-property GEOID -p name=NAMELSAD,sfp=STATEFP,did=SLDLST -s 2e-7 -- house=shp/SLDL/tl_2015_$*_sldl.shp
-	topojson -o $@ -- tmp/state.json tmp/counties.json tmp/districts.json tmp/senate.json tmp/house.json
+	topojson -o $@ -p -- tmp/state.json tmp/counties.json tmp/districts.json tmp/senate.json tmp/house.json
 
 zipcodes/%.json: $(zipcodes) clean
 	mkdir -p $(dir $@) tmp
@@ -57,10 +57,10 @@ zipcodes/%.json: $(zipcodes) clean
 	topojson -o $@ --id-property GEOID10 -s 2e-7 -- zips=tmp/zips.shp
 
 ks.json: states/20.json zipcodes/20.json
-	topojson -o ks.json -- states/20.json zipcodes/20.json
+	topojson -o ks.json -p -- states/20.json zipcodes/20.json
 
 mo.json: states/29.json zipcodes/29.json
-	topojson -o mo.json -- states/29.json zipcodes/29.json
+	topojson -o mo.json -p -- states/29.json zipcodes/29.json
 
 #
 # Clean
