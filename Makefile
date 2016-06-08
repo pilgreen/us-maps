@@ -56,12 +56,6 @@ zipcodes/%.json: $(zipcodes) clean
 	ogr2ogr -where $(zipcodes[$*]) tmp/zips.shp $(zipcodes)
 	topojson -o $@ --id-property GEOID10 -s 2e-7 -- zips=tmp/zips.shp
 
-ks.json: states/20.json zipcodes/20.json
-	topojson -o ks.json -p -- states/20.json zipcodes/20.json
-
-mo.json: states/29.json zipcodes/29.json
-	topojson -o mo.json -p -- states/29.json zipcodes/29.json
-
 #
 # Clean
 #

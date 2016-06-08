@@ -45,8 +45,3 @@ Example: `make zipcodes/20.json`
 
 **Note:** The ZCTA file is 500 MB and not available by state. Therefore, the minumum and maximum zip codes need to be listed manually and that list exceeded the scope of the project so far. I will add more states when it is required, and will accept pull requests if anyone else wants to contribute.
 
-
-
-#### Additional Notes:
-
-There are two other targets that generate the ks.json and mo.json files. These are there for convenience. I will add more as it is required or I get a pull request.
