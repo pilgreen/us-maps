@@ -13,7 +13,7 @@ npm install -g topojson
 
 The us.json target will generate a merged TopoJSON file for the United States with the following objects:
 
-+ state: state boundaries for the United States
++ state: state boundaries for the United States (from National Atlas)
 + counties: county boundaries for the Unites States
 + districts: 114th Congressional district boundaries for the Unites States. 
 

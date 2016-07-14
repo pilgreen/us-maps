@@ -1,57 +1,57 @@
 .PRECIOUS: census/%.zip shp/%.shp
 
-states = shp/STATE/tl_2015_us_state.shp
-counties = shp/COUNTY/tl_2015_us_county.shp
-districts = shp/CD/tl_2015_us_cd114.shp
-zipcodes = shp/ZCTA5/tl_2015_us_zcta510.shp
+states = na/states.shp
+counties = census/COUNTY/tl_2015_us_county.shp
+districts = census/CD/tl_2015_us_cd114.shp
+zipcodes = census/ZCTA5/tl_2015_us_zcta510.shp
 national = $(states) $(counties) $(districts)
 
 help:
 	@echo "View the README.md file for help"
 
 #
-# Download census files
+# Download and create Shapefiles
 #
 
-census/%.zip:
-	mkdir -p $(dir $@)
-	curl -o $@ --create-dirs http://www2.census.gov/geo/tiger/TIGER2015/$*.zip
+census/%.shp:
+	mkdir -p $(dir $@) tmp
+	curl -o tmp/$(notdir $*).zip http://www2.census.gov/geo/tiger/TIGER2015/$*.zip
+	unzip tmp/$(notdir $*).zip -d $(dir $@)
 
-#
-# Unzips Census files to shapefiles
-#
+na/statesp010g.shp:
+	mkdir -p na tmp
+	curl -o tmp/$(notdir).tar.gz http://dds.cr.usgs.gov/pub/data/nationalatlas/statesp010g.shp_nt00938.tar.gz
+	tar -xzvf tmp/$(notdir).tar.gz -C na
 
-shp/%.shp: census/%.zip
-	mkdir -p $(dir $@)
-	unzip -n $< -d $(dir $@)
-	chmod 644 $(dir $@)*
-	touch $(dir $@)*
+na/states.shp: na/statesp010g.shp
+	ogr2ogr -where 'TYPE = "Land"' na/states.shp na/statesp010g.shp
+
 
 #
 # Topojson outputs
 # Note: the states/%.json target is looking for a FIPS code for a state
 #
 
-us.json: $(national) clean
+us.json: $(national)
 	mkdir -p us
-	topojson -o us/states.json --id-property GEOID -p name=NAME,usps=STUSPS -s 2e-6 -- states=$(states)
+	topojson -o us/states.json --id-property STATE_FIPS -p name=NAME,usps=STATE_ABBR -s 2e-7 -- states=$(states)
 	topojson -o us/counties.json --id-property GEOID -p name=NAME,sfp=STATEFP,cfp=COUNTYFP -s 2e-6 -- counties=$(counties)
 	topojson -o us/cd114.json --id-property GEOID -p name=NAMELSAD,sfp=STATEFP,cdfp=CD114FP -s 2e-6 -- districts=$(districts)
 	topojson -o us.json --width 900 --height 500 --projection 'd3.geo.albersUsa()' --margin 10 -p -- us/states.json us/counties.json us/cd114.json
  
-states/%.json: $(national) shp/SLDL/tl_2015_%_sldl.shp shp/SLDU/tl_2015_%_sldu.shp clean
+states/%.json: $(national) census/SLDL/tl_2015_%_sldl.shp census/SLDU/tl_2015_%_sldu.shp
 	mkdir -p $(dir $@) tmp
-	ogr2ogr -where "STATEFP='$*'" tmp/state.shp $(states)
+	ogr2ogr -where "STATE_FIPS='$*'" tmp/state.shp $(states)
 	ogr2ogr -where "STATEFP='$*'" tmp/county.shp $(counties)
 	ogr2ogr -where "STATEFP='$*'" tmp/cd114.shp $(districts)
-	topojson -o tmp/state.json --id-property GEOID -p name=NAME,usps=STUSPS -s 2e-7 -- state=tmp/state.shp
+	topojson -o tmp/state.json --id-property GEOID -p name=NAME,usps=STATE_ABBR -s 2e-7 -- state=tmp/state.shp
 	topojson -o tmp/counties.json --id-property GEOID -p name=NAME,sfp=STATEFP,cfp=COUNTYFP -s 2e-7 -- counties=tmp/county.shp
 	topojson -o tmp/districts.json --id-property GEOID -p name=NAMELSAD,sfp=STATEFP,cdfp=CD114FP -s 2e-7 -- districts=tmp/cd114.shp
 	topojson -o tmp/senate.json --id-property GEOID -p name=NAMELSAD,sfp=STATEFP,did=SLDLST -s 2e-7 -- senate=shp/SLDU/tl_2015_$*_sldu.shp
 	topojson -o tmp/house.json --id-property GEOID -p name=NAMELSAD,sfp=STATEFP,did=SLDLST -s 2e-7 -- house=shp/SLDL/tl_2015_$*_sldl.shp
 	topojson -o $@ --width 400 --height 300 --projection 'd3.geo.mercator()' --margin 10 -p -- tmp/state.json tmp/counties.json tmp/districts.json tmp/senate.json tmp/house.json
 
-zipcodes/%.json: $(zipcodes) clean
+zipcodes/%.json: $(zipcodes)
 	mkdir -p $(dir $@) tmp
 	ogr2ogr -where $(zipcodes[$*]) tmp/zips.shp $(zipcodes)
 	topojson -o $@ --id-property GEOID10 -s 2e-7 --width 400 --height 300 --projection 'd3.geo.mercator()' --margin 10 -- zips=tmp/zips.shp
