@@ -46,9 +46,9 @@ states/%.json: clean $(national) census/SLDL/tl_2015_%_sldl.shp census/SLDU/tl_2
 	ogr2ogr -where "STATEFP='$*'" tmp/cd114.shp $(districts)
 	topojson -o tmp/$*.state.json --id-property GEOID -p name=NAME,usps=STATE_ABBR -s 2e-7 -- state=tmp/state.shp
 	topojson -o tmp/$*.counties.json --id-property GEOID -p name=NAME,sfp=STATEFP,cfp=COUNTYFP -s 2e-7 -- counties=tmp/county.shp
-	topojson -o tmp/$*.districts.json --id-property GEOID -p name=NAMELSAD,sfp=STATEFP,cdfp=CD114FP -s 2e-7 -- districts=tmp/cd114.shp
-	topojson -o tmp/$*.senate.json --id-property GEOID -p name=NAMELSAD,sfp=STATEFP,did=SLDUST -s 2e-7 -- senate=census/SLDU/tl_2015_$*_sldu.shp
-	topojson -o tmp/$*.house.json --id-property GEOID -p name=NAMELSAD,sfp=STATEFP,did=SLDLST -s 2e-7 -- house=census/SLDL/tl_2015_$*_sldl.shp
+	topojson -o tmp/$*.districts.json --id-property CD114FP -p name=NAMELSAD,sfp=STATEFP -s 2e-7 -- districts=tmp/cd114.shp
+	topojson -o tmp/$*.senate.json --id-property SLDUST -p name=NAMELSAD -s 2e-7 -- senate=census/SLDU/tl_2015_$*_sldu.shp
+	topojson -o tmp/$*.house.json --id-property SLDLST -p name=NAMELSAD -s 2e-7 -- house=census/SLDL/tl_2015_$*_sldl.shp
 	topojson -o $@ --width 400 --height 300 --projection 'd3.geo.mercator()' --margin 10 -p -- tmp/$*.state.json tmp/$*.counties.json tmp/$*.districts.json tmp/$*.senate.json tmp/$*.house.json
 
 zipcodes/%.json: $(zipcodes)
