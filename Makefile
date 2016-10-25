@@ -1,10 +1,12 @@
 .PRECIOUS: census/%.shp
 
 states = na/states.shp
-counties = census/COUNTY/tl_2015_us_county.shp
-districts = census/CD/tl_2015_us_cd114.shp
-zipcodes = census/ZCTA5/tl_2015_us_zcta510.shp
+counties = census/COUNTY/tl_2016_us_county.shp
+districts = census/CD/tl_2016_us_cd115.shp
+zipcodes = census/ZCTA5/tl_2016_us_zcta510.shp
 national = $(states) $(counties) $(districts)
+
+projection?=d3.geo.mercator()
 
 help:
 	@echo "View the README.md file for help"
@@ -15,8 +17,8 @@ help:
 
 census/%.shp:
 	mkdir -p $(dir $@) tmp
-	curl -o tmp/$(notdir $*).zip http://www2.census.gov/geo/tiger/TIGER2015/$*.zip
-	unzip tmp/$(notdir $*).zip -d $(dir $@)
+	curl -o tmp/$(notdir $*).zip http://www2.census.gov/geo/tiger/TIGER2016/$*.zip
+	if [ -a $(notdir $*) ]; then unzip tmp/$(notdir $*).zip -d $(dir $@); fi;
 
 na/statesp010g.shp:
 	mkdir -p na tmp
@@ -35,11 +37,13 @@ na/states.shp: na/statesp010g.shp
 us.json: $(national)
 	mkdir -p us
 	topojson -o us/states.json --id-property STATE_FIPS -p name=NAME,usps=STATE_ABBR -s 2e-7 -- states=$(states)
+	topojson -o us/districts.json --id-property GEOID -p name=NAMELSAD,sfp=STATEFP,cdfp=CD114FP -s 2e-6 -- districts=$(districts)
+	topojson -o us.json --width 960 --height 500 --projection 'd3.geo.albersUsa()' -p -- us/states.json us/districts.json
+
+us/counties.json: $(counties)
 	topojson -o us/counties.json --id-property GEOID -p name=NAME,sfp=STATEFP,cfp=COUNTYFP -s 2e-6 -- counties=$(counties)
-	topojson -o us/cd114.json --id-property GEOID -p name=NAMELSAD,sfp=STATEFP,cdfp=CD114FP -s 2e-6 -- districts=$(districts)
-	topojson -o us.json --width 900 --height 500 --projection 'd3.geo.albersUsa()' --margin 10 -p -- us/states.json us/counties.json us/cd114.json
  
-states/%.json: clean $(national) census/SLDL/tl_2015_%_sldl.shp census/SLDU/tl_2015_%_sldu.shp
+states/%.json: clean $(national) census/SLDL/tl_2016_%_sldl.shp census/SLDU/tl_2016_%_sldu.shp
 	mkdir -p $(dir $@) tmp
 	ogr2ogr -where "STATE_FIPS='$*'" tmp/state.shp $(states)
 	ogr2ogr -where "STATEFP='$*'" tmp/county.shp $(counties)
@@ -47,14 +51,19 @@ states/%.json: clean $(national) census/SLDL/tl_2015_%_sldl.shp census/SLDU/tl_2
 	topojson -o tmp/$*.state.json --id-property GEOID -p name=NAME,usps=STATE_ABBR -s 2e-7 -- state=tmp/state.shp
 	topojson -o tmp/$*.counties.json --id-property GEOID -p name=NAME,sfp=STATEFP,cfp=COUNTYFP -s 2e-7 -- counties=tmp/county.shp
 	topojson -o tmp/$*.districts.json --id-property CD114FP -p name=NAMELSAD,sfp=STATEFP -s 2e-7 -- districts=tmp/cd114.shp
-	topojson -o tmp/$*.senate.json --id-property SLDUST -p name=NAMELSAD -s 2e-7 -- senate=census/SLDU/tl_2015_$*_sldu.shp
-	topojson -o tmp/$*.house.json --id-property SLDLST -p name=NAMELSAD -s 2e-7 -- house=census/SLDL/tl_2015_$*_sldl.shp
-	topojson -o $@ --width 400 --height 300 --projection 'd3.geo.mercator()' --margin 10 -p -- tmp/$*.state.json tmp/$*.counties.json tmp/$*.districts.json tmp/$*.senate.json tmp/$*.house.json
+	topojson -o tmp/$*.senate.json --id-property SLDUST -p name=NAMELSAD -s 2e-7 -- senate=census/SLDU/tl_2016_$*_sldu.shp
+# Nebraska abolished the State House of Representatives
+ifeq ($*, 31)
+	topojson -o $@ --width 400 --height 300 --projection '$(projection)' -p -- tmp/$*.state.json tmp/$*.counties.json tmp/$*.districts.json tmp/$*.senate.json
+else
+	topojson -o tmp/$*.house.json --id-property SLDLST -p name=NAMELSAD -s 2e-7 -- house=census/SLDL/tl_2016_$*_sldl.shp
+	topojson -o $@ --width 400 --height 300 --projection '$(projection)' -p -- tmp/$*.state.json tmp/$*.counties.json tmp/$*.districts.json tmp/$*.senate.json tmp/$*.house.json
+endif
 
 zipcodes/%.json: $(zipcodes)
 	mkdir -p $(dir $@) tmp
 	ogr2ogr -where $(zipcodes[$*]) tmp/zips.shp $(zipcodes)
-	topojson -o $@ --id-property GEOID10 -s 2e-7 --width 400 --height 300 --projection 'd3.geo.mercator()' --margin 10 -- zips=tmp/zips.shp
+	topojson -o $@ --id-property GEOID10 -s 2e-7 --width 400 --height 300 --projection 'd3.geo.mercator()' -- zips=tmp/zips.shp
 
 #
 # Clean
