@@ -39,18 +39,18 @@ na/states.shp: na/statesp010g.shp
 us.json: $(national)
 	mkdir -p us
 	topojson -o us/states.json --id-property STATE_FIPS -p name=NAME,usps=STATE_ABBR -s 2e-7 -- states=$(states)
-	topojson -o us/cd.json --id-property GEOID -p stfp=STATEFP,fp=CD115FP -s 2e-6 -- cd=$(cd)
-	topojson -o us/counties.json --id-property GEOID -p name=NAME,stfp=STATEFP,fp=COUNTYFP -s 2e-6 -- counties=$(counties)
+	topojson -o us/cd.json --id-property GEOID -s 2e-6 -- cd=$(cd)
+	topojson -o us/counties.json --id-property GEOID -p name=NAME -s 2e-6 -- counties=$(counties)
 	topojson -o us.json --width 960 --height 500 --projection 'd3.geo.albersUsa()' -p -- us/states.json us/cd.json us/counties.json
 
 states/%.json: cleanstate $(states) $(cd) $(counties) census/SLDL/tl_2016_%_sldl.shp census/SLDU/tl_2016_%_sldu.shp
 	mkdir -p $(dir $@) tmp
 	ogr2ogr -where "STATE_FIPS='$*'" tmp/state.shp $(states)
-	ogr2ogr -where "STATEFP='$*'" tmp/county.shp $(counties)
 	ogr2ogr -where "STATEFP='$*'" tmp/cd.shp $(cd)
+	ogr2ogr -where "STATEFP='$*'" tmp/county.shp $(counties)
 	topojson -o tmp/$*.state.json --id-property STATE_FIPS -p name=NAME,usps=STATE_ABBR -s 2e-7 -- state=tmp/state.shp
+	topojson -o tmp/$*.cd.json --id-property GEOID -s 2e-7 -- cd=tmp/cd.shp
 	topojson -o tmp/$*.counties.json --id-property GEOID -p name=NAME -s 2e-7 -- counties=tmp/county.shp
-	topojson -o tmp/$*.cd.json --id-property CD115FP -s 2e-7 -- cd=tmp/cd.shp
 	topojson -o tmp/$*.senate.json --id-property SLDUST -s 2e-7 -- senate=census/SLDU/tl_2016_$*_sldu.shp
 	# Nebraska abolished their State House of Representatives
 ifeq ($*, 31)
