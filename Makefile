@@ -2,9 +2,9 @@
 
 states = na/states.shp
 counties = census/COUNTY/tl_2016_us_county.shp
-districts = census/CD/tl_2016_us_cd115.shp
+cd = census/CD/tl_2016_us_cd115.shp
 zipcodes = census/ZCTA5/tl_2016_us_zcta510.shp
-national = $(states) $(counties) $(districts)
+national = $(states) $(cd) $(counties)
 
 projection?=d3.geo.mercator()
 
@@ -15,10 +15,12 @@ help:
 # Download and create Shapefiles
 #
 
-census/%.shp:
-	mkdir -p $(dir $@) tmp
+tmp/%.zip:
+	mkdir -p tmp
 	curl -o tmp/$(notdir $*).zip http://www2.census.gov/geo/tiger/TIGER2016/$*.zip
-	if [ -a $(notdir $*) ]; then unzip tmp/$(notdir $*).zip -d $(dir $@); fi;
+
+census/%.shp: tmp/%.zip
+	if [ -a tmp/$(notdir $*).zip ]; then unzip tmp/$(notdir $*).zip -d $(dir $@); fi;
 
 na/statesp010g.shp:
 	mkdir -p na tmp
@@ -37,40 +39,41 @@ na/states.shp: na/statesp010g.shp
 us.json: $(national)
 	mkdir -p us
 	topojson -o us/states.json --id-property STATE_FIPS -p name=NAME,usps=STATE_ABBR -s 2e-7 -- states=$(states)
-	topojson -o us/districts.json --id-property GEOID -p name=NAMELSAD,sfp=STATEFP,cdfp=CD114FP -s 2e-6 -- districts=$(districts)
-	topojson -o us.json --width 960 --height 500 --projection 'd3.geo.albersUsa()' -p -- us/states.json us/districts.json
+	topojson -o us/cd.json --id-property GEOID -p stfp=STATEFP,fp=CD115FP -s 2e-6 -- cd=$(cd)
+	topojson -o us/counties.json --id-property GEOID -p name=NAME,stfp=STATEFP,fp=COUNTYFP -s 2e-6 -- counties=$(counties)
+	topojson -o us.json --width 960 --height 500 --projection 'd3.geo.albersUsa()' -p -- us/states.json us/cd.json us/counties.json
 
-us/counties.json: $(counties)
-	topojson -o us/counties.json --id-property GEOID -p name=NAME,sfp=STATEFP,cfp=COUNTYFP -s 2e-6 -- counties=$(counties)
- 
-states/%.json: clean $(national) census/SLDL/tl_2016_%_sldl.shp census/SLDU/tl_2016_%_sldu.shp
+states/%.json: cleanstate $(states) $(cd) $(counties) census/SLDL/tl_2016_%_sldl.shp census/SLDU/tl_2016_%_sldu.shp
 	mkdir -p $(dir $@) tmp
 	ogr2ogr -where "STATE_FIPS='$*'" tmp/state.shp $(states)
 	ogr2ogr -where "STATEFP='$*'" tmp/county.shp $(counties)
-	ogr2ogr -where "STATEFP='$*'" tmp/cd114.shp $(districts)
-	topojson -o tmp/$*.state.json --id-property GEOID -p name=NAME,usps=STATE_ABBR -s 2e-7 -- state=tmp/state.shp
-	topojson -o tmp/$*.counties.json --id-property GEOID -p name=NAME,sfp=STATEFP,cfp=COUNTYFP -s 2e-7 -- counties=tmp/county.shp
-	topojson -o tmp/$*.districts.json --id-property CD114FP -p name=NAMELSAD,sfp=STATEFP -s 2e-7 -- districts=tmp/cd114.shp
-	topojson -o tmp/$*.senate.json --id-property SLDUST -p name=NAMELSAD -s 2e-7 -- senate=census/SLDU/tl_2016_$*_sldu.shp
-# Nebraska abolished the State House of Representatives
+	ogr2ogr -where "STATEFP='$*'" tmp/cd.shp $(cd)
+	topojson -o tmp/$*.state.json --id-property STATE_FIPS -p name=NAME,usps=STATE_ABBR -s 2e-7 -- state=tmp/state.shp
+	topojson -o tmp/$*.counties.json --id-property GEOID -p name=NAME -s 2e-7 -- counties=tmp/county.shp
+	topojson -o tmp/$*.cd.json --id-property CD115FP -s 2e-7 -- cd=tmp/cd.shp
+	topojson -o tmp/$*.senate.json --id-property SLDUST -s 2e-7 -- senate=census/SLDU/tl_2016_$*_sldu.shp
+	# Nebraska abolished their State House of Representatives
 ifeq ($*, 31)
-	topojson -o $@ --width 400 --height 300 --projection '$(projection)' -p -- tmp/$*.state.json tmp/$*.counties.json tmp/$*.districts.json tmp/$*.senate.json
+	topojson -o $@ --width 400 --height 300 --projection '$(projection)' -p -- tmp/$*.state.json tmp/$*.counties.json tmp/$*.cd.json tmp/$*.senate.json
 else
-	topojson -o tmp/$*.house.json --id-property SLDLST -p name=NAMELSAD -s 2e-7 -- house=census/SLDL/tl_2016_$*_sldl.shp
-	topojson -o $@ --width 400 --height 300 --projection '$(projection)' -p -- tmp/$*.state.json tmp/$*.counties.json tmp/$*.districts.json tmp/$*.senate.json tmp/$*.house.json
+	topojson -o tmp/$*.house.json --id-property SLDLST -s 2e-7 -- house=census/SLDL/tl_2016_$*_sldl.shp
+	topojson -o $@ --width 400 --height 300 --projection '$(projection)' -p -- tmp/$*.state.json tmp/$*.counties.json tmp/$*.cd.json tmp/$*.senate.json tmp/$*.house.json
 endif
 
 zipcodes/%.json: $(zipcodes)
 	mkdir -p $(dir $@) tmp
 	ogr2ogr -where $(zipcodes[$*]) tmp/zips.shp $(zipcodes)
-	topojson -o $@ --id-property GEOID10 -s 2e-7 --width 400 --height 300 --projection 'd3.geo.mercator()' -- zips=tmp/zips.shp
+	topojson -o $@ --id-property GEOID10 -s 2e-7 --width 400 --height 300 --projection '$(projection)' -- zips=tmp/zips.shp
 
 #
 # Clean
 #
 
-clean: 
-	rm -f tmp/state.* tmp/county.* tmp/cd114.*
+cleanstate: 
+	rm -f tmp/state.* tmp/county.* tmp/cd.*
+
+clean:
+	rm -rf tmp census na
 
 #
 # Zip codes
