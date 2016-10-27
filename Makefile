@@ -54,16 +54,16 @@ states/%.json: cleanstate $(states) $(cd) $(counties) census/SLDL/tl_2016_%_sldl
 	topojson -o tmp/$*.senate.json --id-property SLDUST -s 2e-7 -- senate=census/SLDU/tl_2016_$*_sldu.shp
 	# Nebraska abolished their State House of Representatives
 ifeq ($*, 31)
-	topojson -o $@ --width 400 --height 300 --projection '$(projection)' -p -- tmp/$*.state.json tmp/$*.counties.json tmp/$*.cd.json tmp/$*.senate.json
+	topojson -o $@ --width 400 --height 400 --projection '$(projection)' -p -- tmp/$*.state.json tmp/$*.counties.json tmp/$*.cd.json tmp/$*.senate.json
 else
 	topojson -o tmp/$*.house.json --id-property SLDLST -s 2e-7 -- house=census/SLDL/tl_2016_$*_sldl.shp
-	topojson -o $@ --width 400 --height 300 --projection '$(projection)' -p -- tmp/$*.state.json tmp/$*.counties.json tmp/$*.cd.json tmp/$*.senate.json tmp/$*.house.json
+	topojson -o $@ --width 400 --height 400 --projection '$(projection)' -p -- tmp/$*.state.json tmp/$*.counties.json tmp/$*.cd.json tmp/$*.senate.json tmp/$*.house.json
 endif
 
 zipcodes/%.json: $(zipcodes)
 	mkdir -p $(dir $@) tmp
 	ogr2ogr -where $(zipcodes[$*]) tmp/zips.shp $(zipcodes)
-	topojson -o $@ --id-property GEOID10 -s 2e-7 --width 400 --height 300 --projection '$(projection)' -- zips=tmp/zips.shp
+	topojson -o $@ --id-property GEOID10 -s 2e-7 --width 400 --height 400 --projection '$(projection)' -- zips=tmp/zips.shp
 
 #
 # Clean
