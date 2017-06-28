@@ -1,3 +1,5 @@
+## This project has been deprecated thanks to the wonderful work of Mike Bostock on version 4 of d3. His command-line approach is far superior to this one and he has written a very [good tutorial](https://medium.com/@mbostock/command-line-cartography-part-1-897aa8f8ca2c) to help with the transition.
+
 # Overview
 
 The Makefile included in this repository has targets to generate TopoJSON files from US Census Tiger Lines shapefiles.
